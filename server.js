@@ -10,21 +10,23 @@ const server = app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 });
 
-
+ 
 const io = socket(server);
 
 io.on('connection', (socket) => {
-    socket.emit('updateData', {tasks});
+    socket.emit('updateData', tasks);
   socket.on('addTask', (newTask) => {
     tasks.push(newTask.task);
+    console.log(tasks)
     socket.broadcast.emit('addTask', newTask);
-    console.log(tasks);
   });
 
-  socket.on('removeTask', (id) => {
-    tasks.splice(id, 1);
-    socket.emit('removeTask', id);
-    console.log(id);
+  socket.on('removeTask', (taskId) => {
+    
+    const isLocal = false;
+    tasks.splice(taskId, 1);
+    socket.broadcast.emit('removeTask', {id: taskId, isLocal});
   });
   socket.on('disconnect', () => {});
 });
+
