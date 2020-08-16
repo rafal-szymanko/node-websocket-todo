@@ -3,6 +3,8 @@ import React, {
   useEffect
 } from 'react';
 import io from 'socket.io-client';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const socket = io('localhost:8000');
 
@@ -14,15 +16,13 @@ function App() {
 
 
   useEffect(() => {
-    socket.on('addTask', ({task}) => addTask(task));
+    socket.on('addTask', ({name, id}) => addTask(name, id));
     socket.on('removeTask', ({id, isLocal}) => removeTask(id, isLocal));
     socket.on('updateData', (data) => updateTask(data));
   });
 
   const removeTask = (id, isLocal) => {
-    const removedTask = tasks[id];
-    
-    setTasks(tasks.filter(item => item != removedTask));
+    setTasks(tasks.filter(item => item.id != id));
 
     if(isLocal) {
       socket.emit('removeTask', id);
@@ -37,10 +37,13 @@ function App() {
   const submitForm = (event) => {
     event.preventDefault();
 
+    const id = uuidv4();
+
     if (taskName) {
-      addTask(taskName);
+      addTask(taskName, id);
       socket.emit('addTask', {
-        task: taskName,
+        name: taskName,
+        id,
       });
     } else {
       alert('Make sure you have write your task');
@@ -50,14 +53,10 @@ function App() {
     setTaskName('');
   };
 
-  const addTask = (task) => {
-    const index = tasks.findIndex(item => item == task);
-    if (index == -1) {
-      setTasks([...tasks, task]);
-    } else {
-      alert('You have already added this task')
-    }
+  const addTask = (task, id) => {
+    setTasks([...tasks, {id, name: task}]);
   }
+  console.log(tasks);
 
   return (
     <div className="App">
@@ -67,7 +66,7 @@ function App() {
     <section className="tasks-section" id="tasks-section">
       <h2>Tasks</h2>
       <ul className="tasks-section__list" id="tasks-list">
-        {tasks.map(item => <li className="task" key={tasks.findIndex(task => task == item)}>{item}<button className="btn btn--red" onClick={()=> removeTask(tasks.findIndex(task => task == item), true)}>Remove</button></li>)}
+        {tasks.map(item => <li className="task" key={item.id}>{item.name}<button className="btn btn--red" onClick={()=> removeTask(item.id, true)}>Remove</button></li>)}
       </ul>
       <form id="add-task-form" onSubmit={submitForm}>
         <input className="text-input" autoComplete="off" type="text" placeholder="Type your description" id="task-name" onChange={event => setTaskName(event.target.value)}/>
